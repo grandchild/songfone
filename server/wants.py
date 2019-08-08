@@ -58,6 +58,36 @@ class Want:
 
 
 def get_wants() -> list:
+    """
+    Wants-file format:
+    
+        {
+            "wants": [
+                "artist/album/01 - song.flac",
+                "some_song.mp3",
+                ...
+            ],
+            "wants_as": [
+                {
+                    "codec": "opus",
+                    "quality": 320,
+                    "files": [
+                        "artist/album/02 - song2.flac",
+                        ...
+                    ]
+                },
+                {
+                    "codec": "mp3",
+                    "quality": "128",
+                    "files": [
+                        "audiobook/chapter01.flac",
+                        "audiobook/chapter02.flac",
+                        ...
+                    ]
+                }
+            ]
+        }
+    """
     with open(config.wants_file) as wants_file:
         wants_data = json.load(wants_file)
     wants = []
