@@ -20,7 +20,7 @@ class Config:
     """
 
     _error = None
-    audio = "~/Music"
+    audio = "~/Music"  # may olso be List[str]
     output = "~/.local/share/songfone/output"
     extensions = ["mp3", "flac", "mp4", "ogg", "opus"]
     wants = ".songfone/wants.json"
@@ -43,14 +43,18 @@ class Config:
             setattr(self, key.replace(" ", "_"), value)
 
     def _set_file_paths(self):
-        self.audio = os.path.expanduser(self.audio)
+        if isinstance(self.audio, str):
+            self.audio = [os.path.expanduser(self.audio)]
+        elif isinstance(self.audio, list):
+            self.audio = [os.path.expanduser(a) for a in self.audio]
         self.output = os.path.expanduser(self.output)
         self.wants_file = os.path.join(self.output, self.wants)
         self.database_file = os.path.join(self.output, self.database)
 
     def _check_audio_dir(self):
-        if not os.path.isdir(self.audio):
-            raise FileNotFoundError("Error, audio directory does not exist")
+        for a in self.audio:
+            if not os.path.isdir(a):
+                raise FileNotFoundError(f"Error, audio directory {a!r} does not exist")
 
     def __getattribute__(self, key: str):
         err = super().__getattribute__("_error")

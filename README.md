@@ -22,14 +22,16 @@ try.
         https://github.com/jiaaro/pydub#getting-ffmpeg-set-up))
 * [pydub](https://github.com/jiaaro/pydub)
 
-### Smartphone requirements
+### Phone requirements
 
 * Android OS
 
 
 ## Setup
 
-* Unpack the server source on the server and configure `songfone.conf`:
+### Server
+
+Unpack the server source on the server and configure `songfone.conf`:
 
 ```json
 {
@@ -38,6 +40,14 @@ try.
 ```
 
 `"audio"`, the path to the music libarary is the only practically required option.
+
+You may also set multiple paths like this:
+
+```json
+{
+    "audio": ["~/Music", "~/AudioBooks"]
+}
+```
 
 The default share folder that you will have to sync is `~/.local/share/songfone/output`,
 but you can set its location anywhere by adding the `"output"` option:
@@ -51,16 +61,18 @@ but you can set its location anywhere by adding the `"output"` option:
 
 Other options can be found in [`server/config.py`](server/config.py)
 
+
 ## TODO
 
 * *android app*
 * actual database *update* instead of replacement
-* multiple audio dirs
+* ~multiple audio dirs~
 * (multiple servers)
 
 ## License
 
-[![License](https://img.shields.io/github/license/grandchild/songfone.svg)](https://creativecommons.org/publicdomain/zero/1.0/)
+[![License](https://img.shields.io/github/license/grandchild/songfone.svg)](
+    https://creativecommons.org/publicdomain/zero/1.0/)
 
 You may use this code without attribution, that is without mentioning where it's from or
 who wrote it. I would actually prefer if you didn't mention me. You may even claim it's

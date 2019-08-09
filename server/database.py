@@ -4,18 +4,26 @@ import sqlite3
 import mutagen
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
+from typing import List, Dict
+from typing import Iterable, Mapping
 
 from config import config
-from dirs import list_files_absolute
+from dirs import list_files_relative
 from conversion import mimes_to_codec
 
 DB_LAYOUT = """
     SELECT * FROM song;
     
+    DROP TABLE IF EXISTS audio_dir;
     DROP TABLE IF EXISTS song;
     DROP TABLE IF EXISTS tag;
+    
+    CREATE TABLE IF NOT EXISTS audio_dir (
+        path NOT NULL UNIQUE
+    );
 
     CREATE TABLE IF NOT EXISTS song (
+        audio_dir NOT NULL,
         path NOT NULL UNIQUE,
         codec,
         filesize,
@@ -29,19 +37,21 @@ DB_LAYOUT = """
     );
 """
 DB_COMMANDS = {
-    "new song": "INSERT OR REPLACE INTO song VALUES (?, ?, ?, ?)",
+    "new audio dir": "INSERT OR REPLACE INTO audio_dir VALUES (?)",
+    "new song": "INSERT OR REPLACE INTO song VALUES (?, ?, ?, ?, ?)",
     "new tag": "INSERT OR REPLACE INTO tag VALUES (?, ?, ?)",
     "get song tags": "SELECT field, value FROM tag WHERE song in (SELECT rowid FROM song WHERE path = ?)",
 }
 
 
-def get_metadata(audio_path: str):
+def get_metadata(audio_path: str) -> List[Dict]:
     db_data = []
-    for path, stat in list_files_absolute(audio_path, extensions=config.extensions):
+    for path, stat in list_files_relative(audio_path, extensions=config.extensions):
+        abspath = os.path.join(audio_path, path)
         if path.endswith("mp3"):
-            data = MP3(path, ID3=EasyID3)
+            data = MP3(abspath, ID3=EasyID3)
         else:
-            data = mutagen.File(path)
+            data = mutagen.File(abspath)
         if data is not None:
             codec = mimes_to_codec(data.mime)
             data = dict(data)
@@ -53,12 +63,22 @@ def get_metadata(audio_path: str):
     return db_data
 
 
-def save_metadata(db, db_data: list):
+def save_metadata(db, audio_dir: str, db_data: Iterable[Mapping]) -> None:
     cursor = db.cursor()
+    if len(db_data) == 0:
+        return
+    cursor.execute(DB_COMMANDS["new audio dir"], (audio_dir,))
+    audio_dir_id = cursor.lastrowid
     for song in db_data:
         cursor.execute(
             DB_COMMANDS["new song"],
-            (song["path"], song["codec"], song["filesize"], song["mtime"]),
+            (
+                audio_dir_id,
+                song["path"],
+                song["codec"],
+                song["filesize"],
+                song["mtime"],
+            ),
         )
         song_id = cursor.lastrowid
         for tag, value in song.items():
@@ -78,9 +98,10 @@ def get_song_tags(path: str) -> dict:
     return tags
 
 
-def update_database():
+def update_database() -> None:
     db = sqlite3.connect(config.database_file)
     db.cursor().executescript(DB_LAYOUT)
-    data = get_metadata(config.audio)
-    save_metadata(db, data)
+    for audio_dir in config.audio:
+        data = get_metadata(audio_dir)
+        save_metadata(db, audio_dir, data)
     db.close()
