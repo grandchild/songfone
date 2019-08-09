@@ -23,7 +23,7 @@ class Config:
     audio = "~/Music"  # may olso be List[str]
     output = "~/.local/share/songfone/output"
     extensions = ["mp3", "flac", "mp4", "ogg", "opus"]
-    wants = ".songfone/wants.json"
+    wants = ".songfone/songs.wants"
     database = ".songfone/songs.db"
 
     def load(self, file: str) -> None:
