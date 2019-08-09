@@ -2,7 +2,7 @@ import json
 import os
 import sys
 
-from typing import Iterable, Union, Tuple, Set
+from typing import Iterable, Union, Tuple, List, Set
 
 from config import config
 from dirs import list_files_relative
@@ -57,7 +57,7 @@ class Want:
         return str(self)
 
 
-def get_wants() -> list:
+def get_wants() -> List[Want]:
     """
     Wants-file format:
     
@@ -100,7 +100,7 @@ def get_wants() -> list:
     return wants
 
 
-def get_want_diffs(wants: Iterable[Want]) -> Tuple[Set, Set]:
+def get_want_diffs(wants: Iterable[Want]) -> Tuple[Set[str], Set[Want]]:
     have_paths = {
         f[0] for f in list_files_relative(config.output, extensions=config.extensions)
     }
