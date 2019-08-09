@@ -49,7 +49,7 @@ but you can set its location anywhere by adding the `"output"` option:
 }
 ```
 
-Other options can be found in [`server/config.py`]()
+Other options can be found in [`server/config.py`](server/config.py)
 
 ## TODO
 
