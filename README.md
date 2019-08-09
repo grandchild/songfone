@@ -4,7 +4,7 @@
 Download songs from your remote music collection onto your phone — optionally converting
 to a different audio codec.
 
-The goal is have a similar experience to Spotify or Netflix download caches.
+The goal is to have a similar experience to Spotify or Netflix download caches.
 
 
 ## Requirements
