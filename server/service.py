@@ -105,7 +105,7 @@ Description=songfone library update service
 
 [Service]
 Type=oneshot
-ExecStart=python3 -u {songfone_path}/songfone.py
+ExecStart=/usr/bin/python3 -u {songfone_path}/songfone.py
 WorkingDirectory={songfone_path}
 {user_line}
 
