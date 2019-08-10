@@ -2,25 +2,31 @@
 import json
 import os
 import sys
+import pwd
 from typing import Iterable
 
 
 def install_service(i_am_root: bool = False) -> None:
-    data = {}
+    config = {"audio": "~/Music", "output": "~/.local/share/songfone/output"}
     with open("songfone.conf") as config_file:
-        data = json.load(config_file)
-    audio_dirs = data["audio"] if isinstance(data["audio"], list) else [data["audio"]]
+        config = json.load(config_file)
+    watch_paths = (
+        config["audio"] if isinstance(config["audio"], list) else [config["audio"]]
+    )
+    watch_paths.append(os.path.join(config["output"], ".songfone/songs.wants"))
     if sys.platform.startswith("linux"):
         if i_am_root:
             at = "@"
             systemd_unit_dir = "/etc/systemd/system/"
+            watch_paths = [_expanduser_sudo(p) for p in watch_paths]
         else:
             at = ""
             systemd_unit_dir = os.path.expanduser("~/.local/share/systemd/user/")
         write_systemd_unit_file(
             os.path.join(systemd_unit_dir, f"songfone{at}.path"),
             SYSTEMD_PATH_TEMPLATE,
-            path_modified_lines="\n".join([f"PathModified={a}" for a in audio_dirs]),
+            user_line="User=%I" if i_am_root else "",
+            path_modified_lines="\n".join([f"PathModified={a}" for a in watch_paths]),
         )
         write_systemd_unit_file(
             os.path.join(systemd_unit_dir, f"songfone{at}.timer"),
@@ -62,11 +68,23 @@ def _remove_f(path):
         pass
 
 
+def _expanduser_sudo(path):
+    if path.startswith("~/"):
+        sudo_user_home = pwd.getpwnam(os.getenv("SUDO_USER")).pw_dir
+        return path.replace("~/", sudo_user_home + "/", 1)
+    elif path.startswith("~"):
+        first_sep = path.find("/")
+        user = path[1:first_sep] if first_sep >= 0 else path[1:]
+        user_home = pwd.getpwnam(user).pw_dir
+        return path.replace("~" + user, user_home, 1)
+
+
 SYSTEMD_PATH_TEMPLATE = """[Unit]
 Description=songfone library path monitoring trigger
 
 [Path]
 {path_modified_lines}
+{user_line}
 
 [Install]
 WantedBy=multi-user.target
