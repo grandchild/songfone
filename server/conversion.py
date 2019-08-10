@@ -27,7 +27,7 @@ class Conversion:
     def do(self, want: "Want") -> bool:
         from database import get_song_tags
 
-        src_file = os.path.join(config.audio, want.src_path)
+        src_file = os.path.join(want.audio_dir, want.src_path)
         print(f"Converting {want.src_path} to {want.path}... ", end="")
         try:
             audio = AudioSegment.from_file(src_file)

@@ -4,6 +4,7 @@ import sqlite3
 import mutagen
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
+from hashlib import sha256
 from typing import List, Dict
 from typing import Iterable, Mapping
 
@@ -19,7 +20,7 @@ DB_LAYOUT = """
     DROP TABLE IF EXISTS tag;
     
     CREATE TABLE IF NOT EXISTS audio_dir (
-        path NOT NULL UNIQUE
+        path_hash NOT NULL UNIQUE
     );
 
     CREATE TABLE IF NOT EXISTS song (
@@ -67,7 +68,7 @@ def save_metadata(db, audio_dir: str, db_data: Iterable[Mapping]) -> None:
     cursor = db.cursor()
     if len(db_data) == 0:
         return
-    cursor.execute(DB_COMMANDS["new audio dir"], (audio_dir,))
+    cursor.execute(DB_COMMANDS["new audio dir"], (path_hash(audio_dir),))
     audio_dir_id = cursor.lastrowid
     for song in db_data:
         cursor.execute(
@@ -105,3 +106,9 @@ def update_database() -> None:
         data = get_metadata(audio_dir)
         save_metadata(db, audio_dir, data)
     db.close()
+
+
+def path_hash(path: str) -> str:
+    """Return the first 10 digits of the sha256 hash of the utf8-encoded path string."""
+    # *One* digit would probably be enough, but let's be generous :)
+    return sha256(path.encode()).hexdigest()[:10]

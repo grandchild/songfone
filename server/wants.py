@@ -7,11 +7,13 @@ from typing import Iterable, Union, Tuple, List, Set
 from config import config
 from dirs import list_files_relative
 from conversion import Conversion
+from database import path_hash
 
 
 class Want:
-    def __init__(self, path: str, conversion: Conversion = None):
+    def __init__(self, audio_dir: str, path: str, conversion: Conversion = None):
         self.conversion = conversion
+        self.audio_dir = audio_dir
         self.path = path
         if self.conversion is not None:
             self.src_path = self.path
@@ -59,12 +61,13 @@ class Want:
 
 def get_wants() -> List[Want]:
     """
-    Wants-file format:
+    Wants-file format (where a0af9f865b are the first 10 digits of the sha256 hash of
+    the utf8-encoded audio dir):
     
         {
             "wants": [
-                "artist/album/01 - song.flac",
-                "some_song.mp3",
+                "a0af9f865b:artist/album/01 - song.flac",
+                "a0af9f865b:some_song.mp3",
                 ...
             ],
             "wants_as": [
@@ -91,12 +94,18 @@ def get_wants() -> List[Want]:
     with open(config.wants_file) as wants_file:
         wants_data = json.load(wants_file)
     wants = []
-    for want_path in wants_data["wants"]:
-        wants.append(Want(want_path))
+    for json_want in wants_data["wants"]:
+        want_dir, want_path = _split_json_want(json_want)
+        if want_dir is None:
+            continue
+        wants.append(Want(want_dir, want_path))
     for want_conversion in wants_data["wants_as"]:
         conversion = Conversion(want_conversion["codec"], want_conversion["quality"])
-        for want_path in want_conversion["files"]:
-            wants.append(Want(want_path, conversion))
+        for json_want in want_conversion["files"]:
+            want_dir, want_path = _split_json_want(json_want)
+            if want_dir is None:
+                continue
+            wants.append(Want(want_dir, want_path, conversion))
     return wants
 
 
@@ -129,7 +138,7 @@ def add_wanted(added: Iterable[Want]) -> None:
             continue
         os.makedirs(os.path.dirname(target), exist_ok=True)
         if f.conversion is None:
-            os.link(os.path.join(config.audio, f.path), target)
+            os.link(os.path.join(f.audio_dir, f.path), target)
         else:
             if not f.conversion.do(f):
                 print(f"Warning: Could not convert {f.path!r}", file=sys.stderr)
@@ -140,6 +149,13 @@ def fulfill_wants() -> None:
     remove_unwanted(removed)
     add_wanted([a for a in added if a.conversion is None])
     add_wanted([a for a in added if a.conversion is not None])
+
+
+def _split_json_want(json_want: str) -> Tuple[str, str]:
+    want_dir_hash, want_path = json_want.split(":", 1)
+    for audio_dir in config.audio:
+        if path_hash(audio_dir) == want_dir_hash:
+            return audio_dir, want_path
 
 
 if __name__ == "__main__":
