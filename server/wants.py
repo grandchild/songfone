@@ -92,15 +92,26 @@ def get_wants() -> List[Want]:
             ]
         }
     """
-    with open(config.wants_file) as wants_file:
-        wants_data = json.load(wants_file)
+    try:
+        with open(config.wants_file) as wants_file:
+            if wants_file.read().strip() == "":
+                raise json.JSONDecodeError("Empty file, expecting at least '{}'", "", 0)
+            wants_file.seek(0)
+            wants_data = json.load(wants_file)
+    except FileNotFoundError:
+        return []
+    except json.JSONDecodeError as err:
+        print(f"Warning, error parsing wants file: {err}", file=sys.stderr)
+        return []
     wants = []
-    for json_want in wants_data["wants"]:
+    wants_data_wants = wands_data["wants"] if "wants" in wants_data else []
+    wants_data_wants_as = wants_data["wants_as"] if "wants_as" in wants_data else []
+    for json_want in wants_data_wants:
         want_dir, want_path = _split_json_want(json_want)
         if want_dir is None:
             continue
         wants.append(Want(want_dir, want_path))
-    for want_conversion in wants_data["wants_as"]:
+    for want_conversion in wants_data_wants_as:
         conversion = Conversion(want_conversion["codec"], want_conversion["quality"])
         for json_want in want_conversion["files"]:
             want_dir, want_path = _split_json_want(json_want)
