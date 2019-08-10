@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import shutil
 
 from typing import Iterable, Union, Tuple, List, Set
 
@@ -138,7 +139,7 @@ def add_wanted(added: Iterable[Want]) -> None:
             continue
         os.makedirs(os.path.dirname(target), exist_ok=True)
         if f.conversion is None:
-            os.link(os.path.join(f.audio_dir, f.path), target)
+            shutil.copy2(os.path.join(f.audio_dir, f.path), target)
         else:
             if not f.conversion.do(f):
                 print(f"Warning: Could not convert {f.path!r}", file=sys.stderr)
