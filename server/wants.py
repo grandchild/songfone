@@ -26,7 +26,7 @@ class Want:
 
     def __eq__(self, other: Union["Want", str, os.PathLike]) -> bool:
         """
-        >>> w = Want("p")
+        >>> w = Want("", "p")
         >>> w == "p"
         True
         >>> "p" == w
@@ -37,12 +37,12 @@ class Want:
         True
         >>> set(["p", "q"]) - set([w])
         {'q'}
-        >>> v = Want("s")
+        >>> v = Want("", "s")
         >>> set([w, v]) - set(["p", "q"])
-        {Want('s')}
+        {Want('', 's')}
         """
         if isinstance(other, Want):
-            return self.path == other.path
+            return self.path == other.path and self.audio_dir == self.audio_dir
         elif isinstance(other, str):
             return self.path == other
         elif isinstance(other, os.PathLike):
@@ -52,9 +52,9 @@ class Want:
 
     def __str__(self) -> str:
         if self.conversion is None:
-            return f"Want({self.path!r})"
+            return f"Want({self.audio_dir!r}, {self.path!r})"
         else:
-            return f"Want({self.path!r}, {self.conversion})"
+            return f"Want({self.audio_dir!r}, {self.path!r}, {self.conversion})"
 
     def __repr__(self) -> str:
         return str(self)
