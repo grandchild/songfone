@@ -104,7 +104,7 @@ def get_wants() -> List[Want]:
         print(f"Warning, error parsing wants file: {err}", file=sys.stderr)
         return []
     wants = []
-    wants_data_wants = wands_data["wants"] if "wants" in wants_data else []
+    wants_data_wants = wants_data["wants"] if "wants" in wants_data else []
     wants_data_wants_as = wants_data["wants_as"] if "wants_as" in wants_data else []
     for json_want in wants_data_wants:
         want_dir, want_path = _split_json_want(json_want)
