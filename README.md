@@ -17,10 +17,11 @@ try.
 ### Server requirements
 
 * [Python](https://python.org) >= 3.6
-* [ffmpeg](https://ffmpeg.org) or [libav](https://libav.org)
-    ([pydub-related install instructions](
-        https://github.com/jiaaro/pydub#getting-ffmpeg-set-up))
+* [mutagen](https://github.com/quodlibet/mutagen)
 * [pydub](https://github.com/jiaaro/pydub)
+* pydub backend: [ffmpeg](https://ffmpeg.org) or [libav](https://libav.org)
+    (see [install instructions for pydub](
+        https://github.com/jiaaro/pydub#getting-ffmpeg-set-up))
 
 ### Phone requirements
 
