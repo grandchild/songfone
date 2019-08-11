@@ -35,7 +35,6 @@ def install_service(
         write_systemd_unit_file(
             os.path.join(systemd_unit_dir, f"songfone{at}.path"),
             SYSTEMD_PATH_TEMPLATE,
-            user_line="User=%I" if i_am_root else "",
             path_modified_lines="\n".join([f"PathModified={a}" for a in watch_paths]),
         )
         write_systemd_unit_file(
@@ -98,7 +97,6 @@ Description=songfone library path monitoring trigger
 
 [Path]
 {path_modified_lines}
-{user_line}
 
 [Install]
 WantedBy=multi-user.target
