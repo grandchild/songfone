@@ -65,8 +65,7 @@ Other options can be found in [`server/config.py`](server/config.py)
 ## TODO
 
 * *android app*
-* actual database *update* instead of replacement
-* ~multiple audio dirs~
+* cover art
 * (multiple servers)
 
 ## License
