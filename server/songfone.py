@@ -8,10 +8,11 @@ from wants import fulfill_wants
 def main(config_file=None):
     config.load(config_file or "songfone.conf")
     config.make_output()
+    fulfill_wants()
+    print(":: wanted files complete")
     update_database()
     print(":: database update complete")
     fulfill_wants()
-    print(":: wanted files complete")
 
 
 if __name__ == "__main__":
