@@ -18,6 +18,8 @@ try.
 
 * [Python](https://python.org) >= 3.6
 * [mutagen](https://github.com/quodlibet/mutagen)
+
+Optional for codec conversion:
 * [pydub](https://github.com/jiaaro/pydub)
 * pydub backend: [ffmpeg](https://ffmpeg.org) or [libav](https://libav.org)
     (see [install instructions for pydub](

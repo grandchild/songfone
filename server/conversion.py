@@ -1,6 +1,12 @@
-from pydub import AudioSegment
 import os
+import sys
 from typing import Iterable
+
+PYDUB_AVAILABLE = True
+try:
+    from pydub import AudioSegment
+except ImportError:
+    PYDUB_AVAILABLE = FALSE
 
 from config import config
 
@@ -25,7 +31,10 @@ class Conversion:
             raise NotImplementedError("Unknown audio codec")
 
     def do(self, want: "Want") -> bool:
-        from database import get_song_tags
+        if not PYDUB_AVAILABLE:
+            print("pydub not available, conversions not possible", file=sys.stderr)
+            return False
+        from database import get_song_tags  # lazy import to avoid circular import
 
         src_file = os.path.join(want.audio_dir, want.src_path)
         print(f"Converting {want.src_path} to {want.path}... ", end="")
