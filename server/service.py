@@ -3,16 +3,25 @@ import json
 import os
 import sys
 import pwd
+from argparse import ArgumentParser
 from typing import Iterable
 
 
-def install_service(i_am_root: bool = False) -> None:
+def install_service(
+    i_am_root: bool = False, config_filepath: str = "songfone.conf"
+) -> None:
     config = {"audio": "~/Music", "output": "~/.local/share/songfone/output"}
-    with open("songfone.conf") as config_file:
-        config = json.load(config_file)
-    watch_paths = (
-        config["audio"] if isinstance(config["audio"], list) else [config["audio"]]
-    )
+    try:
+        with open(config_filepath) as config_file:
+            config.update(json.load(config_file))
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+    try:
+        watch_paths = (
+            config["audio"] if isinstance(config["audio"], list) else [config["audio"]]
+        )
+    except KeyError:
+        watch_paths = []
     watch_paths.append(os.path.join(config["output"], ".songfone/songs.wants"))
     if sys.platform.startswith("linux"):
         if i_am_root:
@@ -22,6 +31,7 @@ def install_service(i_am_root: bool = False) -> None:
         else:
             at = ""
             systemd_unit_dir = os.path.expanduser("~/.local/share/systemd/user/")
+            os.makedirs(systemd_unit_dir, exist_ok=True)
         write_systemd_unit_file(
             os.path.join(systemd_unit_dir, f"songfone{at}.path"),
             SYSTEMD_PATH_TEMPLATE,
@@ -42,7 +52,9 @@ def install_service(i_am_root: bool = False) -> None:
         raise NotImplementedError("OS {sys.platform} not supported for service install")
 
 
-def write_systemd_unit_file(name: str, template: str, **kwargs) -> None:
+def write_systemd_unit_file(
+    name: str, template: str, print_out=False, **kwargs
+) -> None:
     with open(name, "w") as file:
         file.write(template.format(**kwargs))
 
@@ -77,6 +89,8 @@ def _expanduser_sudo(path):
         user = path[1:first_sep] if first_sep >= 0 else path[1:]
         user_home = pwd.getpwnam(user).pw_dir
         return path.replace("~" + user, user_home, 1)
+    else:
+        return path
 
 
 SYSTEMD_PATH_TEMPLATE = """[Unit]
@@ -113,16 +127,21 @@ WorkingDirectory={songfone_path}
 WantedBy=multi-user.target
 """
 
-USAGE = f"""Usage:
-    {__file__}              Install service files
-    {__file__} uninstall    Remove service files
-"""
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "uninstall":
-            uninstall_service(os.getuid() == 0)
-        else:
-            print(USAGE)
+    parser = ArgumentParser("Install songfone as a system service")
+    parser.add_argument("-i", "--install", action="store_true", help="Install service")
+    parser.add_argument(
+        "-u", "--uninstall", action="store_true", help="Uninstall service"
+    )
+    parser.add_argument(
+        "-c", "--config", nargs=1, default="songfone.conf", help="Set config file path"
+    )
+    args = parser.parse_args()
+
+    if args.install:
+        install_service(os.getuid() == 0, args.config[0])
+    elif args.uninstall:
+        uninstall_service(os.getuid() == 0)
     else:
-        install_service(os.getuid() == 0)
+        parser.print_help()
