@@ -25,7 +25,7 @@ DB_LAYOUT = """
 
     CREATE TABLE IF NOT EXISTS song (
         audio_dir NOT NULL,
-        path NOT NULL UNIQUE,
+        path NOT NULL,
         codec,
         filesize,
         mtime
