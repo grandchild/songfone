@@ -12,14 +12,30 @@ from config import config
 
 
 class Conversion:
+    """
+    A desired conversion from one audio codec into another.
+
+    Attributes:
+        
+        codec (`str`): A string identifier of the audio codec. Often identical
+            to the file extension.
+        quality (`int`): The codec sample rate in bits per second.
+    """
+
     _codecs_ext_eq = ["mp3", "flac", "opus", "mp4", "m4a"]
-    _codecs_ext_neq = {"vorbis": "ogg"}
-    valid_codecs = _codecs_ext_eq + list(_codecs_ext_neq)
+    _codecs_ext_neq = {"ogg": "libvorbis"}
+    valid_codecs = _codecs_ext_eq + list(_codecs_ext_neq.values())
 
     def __init__(self, codec: str, quality: int):
         self.codec = codec.lower()
         if self.codec not in self.valid_codecs:
             raise NotImplementedError("Unknown audio codec")
+        self.pydub_codec = (
+            self.codec
+            if self.codec in self._codecs_ext_eq
+            else self._codecs_ext_neq[self.codec]
+        )
+
         self.quality = quality
 
     def get_ext(self) -> str:
@@ -42,8 +58,8 @@ class Conversion:
             audio = AudioSegment.from_file(src_file)
             audio.export(
                 os.path.join(config.output, want.path),
-                format=self.codec,
-                bitrate=f"{self.quality}k",
+                format=self.pydub_codec,
+                bitrate=f"{self.quality}",
                 tags=get_song_tags(src_file),
             )
         except Exception:

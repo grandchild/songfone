@@ -112,7 +112,9 @@ def get_wants() -> List[Want]:
             continue
         wants.append(Want(want_dir, want_path))
     for want_conversion in wants_data_wants_as:
-        conversion = Conversion(want_conversion["codec"], want_conversion["quality"])
+        conversion = Conversion(
+            want_conversion["codec"], want_conversion["quality"] * 1024
+        )
         for json_want in want_conversion["files"]:
             want_dir, want_path = _split_json_want(json_want)
             if want_dir is None:
