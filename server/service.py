@@ -58,7 +58,7 @@ def write_systemd_unit_file(
         file.write(template.format(**kwargs))
 
 
-def uninstall_service(i_am_root: bool = False):
+def uninstall_service(i_am_root: bool = False) -> None:
     if sys.platform.startswith("linux"):
         if i_am_root:
             systemd_unit_dir = "/etc/systemd/system/"
@@ -72,14 +72,14 @@ def uninstall_service(i_am_root: bool = False):
             _remove_f(os.path.join(systemd_unit_dir, "songfone.timer"))
 
 
-def _remove_f(path):
+def _remove_f(path: str) -> None:
     try:
         os.remove(path)
     except FileNotFoundError:
         pass
 
 
-def _expanduser_sudo(path):
+def _expanduser_sudo(path: str) -> str:
     if path.startswith("~/"):
         sudo_user_home = pwd.getpwnam(os.getenv("SUDO_USER")).pw_dir
         return path.replace("~/", sudo_user_home + "/", 1)
