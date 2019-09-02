@@ -19,12 +19,12 @@ class Config:
     '.songfone/songs.db'
     """
 
-    _error = None
     audio = "~/Music"  # may olso be List[str]
-    output = "~/.local/share/songfone/output"
+    output = "~/.local/share/songfone"
     extensions = ["mp3", "flac", "mp4", "ogg", "opus"]
     wants = ".songfone/songs.wants"
     database = ".songfone/songs.db"
+    _error = None
 
     def load(self, file: str) -> None:
         self._load_from_file(file)

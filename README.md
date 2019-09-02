@@ -52,13 +52,13 @@ You may also set multiple paths like this:
 }
 ```
 
-The default share folder that you will have to sync is `~/.local/share/songfone/output`,
+The default share folder that you will have to sync is `~/.local/share/songfone`,
 but you can set its location anywhere by adding the `"output"` option:
 
 ```json
 {
     "audio": "~/Music",
-    "output": "~/my/songfone/output"
+    "output": "~/my/songfone"
 }
 ```
 
@@ -70,6 +70,7 @@ Other options can be found in [`server/config.py`](server/config.py)
 * *android app*
 * cover art
 * (multiple servers)
+
 
 ## License
 
