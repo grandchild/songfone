@@ -19,7 +19,7 @@ DB_LAYOUT = """
         path_hash NOT NULL UNIQUE
     );
 
-    CREATE TABLE IF NOT EXISTS song (
+    CREATE VIRTUAL TABLE IF NOT EXISTS song USING fts4 (
         audio_dir NOT NULL,
         path NOT NULL,
         codec,
@@ -29,7 +29,7 @@ DB_LAYOUT = """
         mtime
     );
 
-    CREATE TABLE IF NOT EXISTS tag (
+    CREATE VIRTUAL TABLE IF NOT EXISTS tag USING fts4 (
         song NOT NULL,
         field NOT NULL,
         value
