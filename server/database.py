@@ -23,6 +23,8 @@ DB_LAYOUT = """
         audio_dir NOT NULL,
         path NOT NULL,
         codec,
+        quality,
+        length_sec,
         filesize,
         mtime
     );
@@ -98,11 +100,19 @@ def scan_song(
         return False
     if data is not None:
         codec = mimes_to_codec(data.mime)
+        quality = data.info.bitrate if hasattr(data.info, "bitrate") else 0
+        length = data.info.length
         song_id = _upsert(
             cursor,
             "song",
             {"audio_dir": audio_dir_id, "path": path},
-            {"codec": codec, "filesize": stat.st_size, "mtime": int(stat.st_mtime)},
+            {
+                "codec": codec,
+                "quality": quality,
+                "length_sec": length,
+                "filesize": stat.st_size,
+                "mtime": int(stat.st_mtime),
+            },
         )
         if prev_song_id is not None:
             cursor.execute(DB_COMMANDS["clear song tags"], (prev_song_id,))
