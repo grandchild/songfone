@@ -19,7 +19,7 @@ class Config:
     '.songfone/songs.db'
     """
 
-    audio = "~/Music"  # may olso be List[str]
+    audio = "~/Music"  # may also be List[str]
     output = "~/.local/share/songfone"
     extensions = ["mp3", "flac", "mp4", "ogg", "opus"]
     wants = ".songfone/songs.wants"
