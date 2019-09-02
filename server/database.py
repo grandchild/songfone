@@ -107,9 +107,10 @@ def scan_song(
         if prev_song_id is not None:
             cursor.execute(DB_COMMANDS["clear song tags"], (prev_song_id,))
         for tag, value in data.items():
+            clean_value = "".join([c for c in value[0] if ord(c) >= 0x20])
             if tag in ["path", "codec", "filesize", "mtime"]:
                 continue
-            cursor.execute(DB_COMMANDS["new tag"], (song_id, tag, value[0]))
+            cursor.execute(DB_COMMANDS["new tag"], (song_id, tag, clean_value))
         return True
     return False
 
