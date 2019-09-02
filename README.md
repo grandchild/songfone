@@ -34,26 +34,32 @@ Optional for codec conversion:
 
 ### Server
 
-Unpack the server source on the server and configure `songfone.conf`:
+Unpack the `server/` directory on the server machine and configure `"audio"`, the path
+to your music libarary in `songfone.conf`:
 
 ```json
 {
     "audio": "~/Music"
 }
 ```
+This is the only *required* configuration.
 
-`"audio"`, the path to the music libarary is the only practically required option.
+### Sync
 
-You may also set multiple paths like this:
+Next set up your file synchronization tool to share `~/.local/share/songfone` with the
+device you want to download music to.
 
-```json
-{
-    "audio": ["~/Music", "~/AudioBooks"]
-}
-```
+You should see a `.songfone/` directory appear as soon as you start the server.
 
-The default share folder that you will have to sync is `~/.local/share/songfone`,
-but you can set its location anywhere by adding the `"output"` option:
+### App
+
+*TODO*
+
+
+## Configuration
+
+The default share folder is `~/.local/share/songfone`, but you can set its location
+anywhere by adding the `"output"` option:
 
 ```json
 {
@@ -62,7 +68,16 @@ but you can set its location anywhere by adding the `"output"` option:
 }
 ```
 
-Other options can be found in [`server/config.py`](server/config.py)
+You may set multiple audio paths like this:
+
+```json
+{
+    "audio": ["~/Music", "~/AudioBooks"]
+}
+```
+
+Other options can be found in [`config.py`](server/config.py) as attributes of
+the `Config` class.
 
 
 ## TODO
