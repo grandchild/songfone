@@ -51,9 +51,7 @@ def install_service(
         raise NotImplementedError("OS {sys.platform} not supported for service install")
 
 
-def write_systemd_unit_file(
-    name: str, template: str, print_out=False, **kwargs
-) -> None:
+def write_systemd_unit_file(name: str, template: str, **kwargs) -> None:
     with open(name, "w") as file:
         file.write(template.format(**kwargs))
 
