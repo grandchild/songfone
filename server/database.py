@@ -49,7 +49,7 @@ def scan_audio_dir(audio_dir: str, db: sqlite3.Connection) -> None:
     audio_dir_hash = path_hash(audio_dir)
     audio_dir_id = _upsert(cursor, "audio_dir", {"path_hash": audio_dir_hash})
     last_prefix = ""
-    commit_every = 100  # rows
+    commit_every = 800  # rows
     commit_cache_count = 0
     for path, stat in list_files_relative(audio_dir, extensions=config.extensions):
         db_song = cursor.execute(
