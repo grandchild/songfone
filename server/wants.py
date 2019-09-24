@@ -63,7 +63,7 @@ class Want:
 def get_wants() -> List[Want]:
     """
     Wants-file format (where a0af9f865b are the first 10 digits of the sha256 hash of
-    the utf8-encoded audio dir):
+    the utf8-encoded audio dir path):
     
         {
             "wants": [
@@ -74,18 +74,18 @@ def get_wants() -> List[Want]:
             "wants_as": [
                 {
                     "codec": "opus",
-                    "quality": 320,
+                    "quality": 128,
                     "files": [
-                        "artist/album/02 - song2.flac",
+                        "a0af9f865b:artist/album/02 - song2.flac",
                         ...
                     ]
                 },
                 {
                     "codec": "mp3",
-                    "quality": "128",
+                    "quality": "320",
                     "files": [
-                        "audiobook/chapter01.flac",
-                        "audiobook/chapter02.flac",
+                        "a0af9f865b:audiobook/chapter01.flac",
+                        "a0af9f865b:audiobook/chapter02.flac",
                         ...
                     ]
                 }
