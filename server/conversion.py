@@ -52,7 +52,7 @@ class Conversion:
             print("pydub not available, conversions not possible", file=sys.stderr)
             return False
         src_file = os.path.join(want.audio_dir, want.src_path)
-        print(f"Converting {want.path}... ", end="")
+        print(f"Converting {want.path}")
         try:
             audio = AudioSegment.from_file(src_file)
             audio.export(
@@ -62,9 +62,7 @@ class Conversion:
                 tags=get_song_tags(want.src_path),
             )
         except Exception:
-            print("failed")
             return False
-        print("done")
         return True
 
     def __str__(self):
