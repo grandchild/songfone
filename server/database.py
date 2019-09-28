@@ -11,7 +11,6 @@ from typing import Iterable, Mapping, Any, Optional
 
 from config import config
 from dirs import list_files_relative
-from conversion import mimes_to_codec
 
 
 DB_LAYOUT = """
@@ -205,6 +204,14 @@ def _upsert(
             + ")"
         )
         return cursor.execute(insert, values).lastrowid
+
+
+def mimes_to_codec(mimes: Iterable[str]) -> str:
+    """Utility function for turning mutagen's mime types into a single codec string."""
+    if any(["codecs=opus" in m for m in mimes]):
+        return "opus"
+    else:
+        return mimes[0].replace("audio/", "")
 
 
 if __name__ == "__main__":

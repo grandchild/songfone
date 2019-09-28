@@ -9,6 +9,7 @@ except ImportError:
     PYDUB_AVAILABLE = FALSE
 
 from config import config
+from database import get_song_tags
 
 
 class Conversion:
@@ -50,8 +51,6 @@ class Conversion:
         if not PYDUB_AVAILABLE:
             print("pydub not available, conversions not possible", file=sys.stderr)
             return False
-        from database import get_song_tags  # lazy import to avoid circular import
-
         src_file = os.path.join(want.audio_dir, want.src_path)
         print(f"Converting {want.src_path} to {want.path}... ", end="")
         try:
@@ -70,11 +69,3 @@ class Conversion:
 
     def __str__(self):
         return f"in {self.codec.upper()}@{self.quality}kbps"
-
-
-def mimes_to_codec(mimes: Iterable[str]) -> str:
-    """Utility function for turning mutagen's mime types into a single codec string."""
-    if any(["codecs=opus" in m for m in mimes]):
-        return "opus"
-    else:
-        return mimes[0].replace("audio/", "")
