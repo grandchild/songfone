@@ -137,8 +137,10 @@ def get_want_diffs(wants: Iterable[Want]) -> Tuple[Set[str], Set[Want]]:
 def remove_unwanted(removed: Iterable[str]) -> None:
     for f in removed:
         target = os.path.join(config.output, f)
-        if os.path.exists(target):
+        try:
             os.remove(target)
+        except FileNotFoundError:
+            pass
         try:
             os.removedirs(os.path.dirname(target))
         except OSError:
