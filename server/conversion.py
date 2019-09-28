@@ -52,7 +52,7 @@ class Conversion:
             print("pydub not available, conversions not possible", file=sys.stderr)
             return False
         src_file = os.path.join(want.audio_dir, want.src_path)
-        print(f"Converting {want.src_path} to {want.path}... ", end="")
+        print(f"Converting {want.path}... ", end="")
         try:
             audio = AudioSegment.from_file(src_file)
             audio.export(
