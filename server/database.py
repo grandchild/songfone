@@ -52,7 +52,9 @@ def scan_audio_dir(audio_dir: str, db: sqlite3.Connection) -> None:
     last_prefix = ""
     commit_every = 800  # rows
     commit_cache_count = 0
-    for path, stat in list_files_relative(audio_dir, extensions=config.extensions):
+    for path, stat in list_files_relative(
+        audio_dir, extensions=config.extensions, ignore_empty=True
+    ):
         db_song = cursor.execute(
             DB_COMMANDS["get song"], (audio_dir_id, path)
         ).fetchone()
@@ -63,9 +65,6 @@ def scan_audio_dir(audio_dir: str, db: sqlite3.Connection) -> None:
         ):
             continue
         abspath = os.path.join(audio_dir, path)
-        if stat.st_size == 0:
-            print(f"Warning, empty file: {abspath!r}", file=sys.stderr)
-            continue
         prefix = path[: path.find("/")]
         if last_prefix != prefix:
             last_prefix = prefix

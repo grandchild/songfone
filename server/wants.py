@@ -125,7 +125,10 @@ def get_wants() -> List[Want]:
 
 def get_want_diffs(wants: Iterable[Want]) -> Tuple[Set[str], Set[Want]]:
     have_paths = {
-        f[0] for f in list_files_relative(config.output, extensions=config.extensions)
+        f[0]
+        for f in list_files_relative(
+            config.output, extensions=config.extensions, ignore_empty=True
+        )
     }
     want_paths = set(wants)
     removed = have_paths - want_paths
@@ -150,9 +153,6 @@ def remove_unwanted(removed: Iterable[str]) -> None:
 def add_wanted(added: Iterable[Want]) -> None:
     for f in added:
         target = os.path.join(config.output, f.path)
-        if os.path.exists(target):
-            f.have = True
-            continue
         os.makedirs(os.path.dirname(target), exist_ok=True)
         if f.conversion is None:
             shutil.copy2(os.path.join(f.audio_dir, f.path), target)
