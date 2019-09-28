@@ -59,7 +59,7 @@ class Conversion:
                 os.path.join(config.output, want.path),
                 format=self.pydub_codec,
                 bitrate=f"{self.quality}",
-                tags=get_song_tags(src_file),
+                tags=get_song_tags(want.src_path),
             )
         except Exception:
             print("failed")
