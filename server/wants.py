@@ -130,7 +130,8 @@ def get_want_diffs(wants: Iterable[Want]) -> Tuple[Set[str], Set[Want]]:
     want_paths = set(wants)
     removed = have_paths - want_paths
     added = want_paths - have_paths
-    return removed, added
+    sort_by_path = lambda w: w.path
+    return sorted(removed, key=sort_by_path), sorted(added, key=sort_by_path)
 
 
 def remove_unwanted(removed: Iterable[str]) -> None:
