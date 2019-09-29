@@ -68,13 +68,36 @@ anywhere by adding the `"output"` option:
 }
 ```
 
-You may set multiple audio paths like this:
+You may set multiple audio source paths like this:
 
 ```json
 {
     "audio": ["~/Music", "~/AudioBooks"]
 }
 ```
+
+When converting songs, you might want to use multiple threads to speed up the process:
+
+```json
+{
+    "audio": "~/Music",
+    "max_conversion_threads": 6
+}
+```
+The default value is `2`, so not setting this will already convert two songs at a time.
+
+This config key supports setting the thread count in relation to the system's CPU count:
+
+```json
+{
+    "audio": "~/Music",
+    "max_conversion_threads": "cpus/2"
+}
+```
+You may use any expression like `cpus [ +|-|*|/ <number> ]`, e.g.: *"cpus-2"*,
+*"CPUs \* 2"* or just *"cpus"*. Case and spaces between the operands and operators don't
+matter. Conversion might fail if all CPUs are busy with ffmpeg (*TODO: Why?*), so a
+recommended setting would be *"cpus-1"*.
 
 Other options can be found in [`config.py`](server/config.py) as attributes of
 the `Config` class.
