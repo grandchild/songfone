@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import shutil
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from typing import Iterable, Union, Tuple, List, Set
 
@@ -154,11 +155,22 @@ def add_wanted(added: Iterable[Want]) -> None:
     for f in added:
         target = os.path.join(config.output, f.path)
         os.makedirs(os.path.dirname(target), exist_ok=True)
-        if f.conversion is None:
-            shutil.copy2(os.path.join(f.audio_dir, f.path), target)
-        else:
-            if not f.conversion.do(f):
-                print(f"Warning: Could not convert {f.path!r}", file=sys.stderr)
+
+    for f in [a for a in added if a.conversion is None]:
+        target = os.path.join(config.output, f.path)
+        shutil.copy2(os.path.join(f.audio_dir, f.path), target)
+
+    conversions = [a for a in added if a.conversion is not None]
+    with ThreadPoolExecutor(config.max_conversion_threads) as pool:
+        conversion_path = {
+            pool.submit(fc.conversion.do, fc): fc.path for fc in conversions
+        }
+        for future in as_completed(conversion_path):
+            if not future.result():
+                print(
+                    f"Warning: Could not convert {conversion_path[future]!r}",
+                    file=sys.stderr,
+                )
 
 
 def fulfill_wants() -> None:

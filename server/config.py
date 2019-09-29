@@ -1,6 +1,9 @@
 import json
 import os
 import sys
+import re
+
+MAX_CONVERT_THREADS = 512
 
 
 class Config:
@@ -24,12 +27,14 @@ class Config:
     extensions = ["mp3", "flac", "mp4", "ogg", "opus"]
     wants = ".songfone/songs.wants"
     database = ".songfone/songs.db"
+    max_conversion_threads = 2
     _error = None
 
     def load(self, file: str) -> None:
         self._load_from_file(file)
         self._set_file_paths()
         self._check_audio_dir()
+        self._eval_max_threads_expr()
 
     def _load_from_file(self, file):
         try:
@@ -55,6 +60,54 @@ class Config:
         for a in self.audio:
             if not os.path.isdir(a):
                 raise FileNotFoundError(f"Error, audio directory {a!r} does not exist")
+
+    def _eval_max_threads_expr(self):
+        if isinstance(self.max_conversion_threads, str):
+            config_str_value = self.max_conversion_threads.lower()
+            match = re.fullmatch(
+                r"(?:\d+)|(?:cpus *(?:([+\-*/]) *(\d)+)?)", config_str_value
+            )
+            if match is not None:
+                if "cpus" not in config_str_value:
+                    self.max_conversion_threads = int(config_str_value)
+                    return
+                cpus = os.cpu_count()
+                if match.lastindex is None:
+                    self.max_conversion_threads = cpus
+                    return
+                op = match.group(1)
+                val = int(match.group(2))
+                if op == "+":
+                    self.max_conversion_threads = min(MAX_CONVERT_THREADS, cpus + val)
+                elif op == "-":
+                    self.max_conversion_threads = min(MAX_CONVERT_THREADS, cpus - val)
+                elif op == "*":
+                    self.max_conversion_threads = min(MAX_CONVERT_THREADS, cpus * val)
+                elif op == "/":
+                    self.max_conversion_threads = min(MAX_CONVERT_THREADS, cpus // val)
+                else:
+                    print(
+                        "Error, you somehow exploited re.fullmatch and made it here, "
+                        "congratulations. Have a cookie.",
+                        file=sys.stderr,
+                    )
+                    sys.exit(-1337)
+            else:
+                print(
+                    "Error, max_conversion_threads expression is invalid: "
+                    f"{self.max_conversion_threads!r}\n"
+                    "Use only 'cpus [+|-|*|/ <number>]', "
+                    "e.g.: 'cpus - 2', 'CPUs/4', 'cpus'.",
+                    file=sys.stderr,
+                )
+        elif isinstance(self.max_conversion_threads, int):
+            pass
+        else:
+            print(
+                "Error, max_conversion_threads is invalid: "
+                f"{self.max_conversion_threads!r}",
+                file=sys.stderr,
+            )
 
     def __getattribute__(self, key: str):
         err = super().__getattribute__("_error")
