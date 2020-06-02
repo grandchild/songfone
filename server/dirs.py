@@ -40,9 +40,3 @@ def _list_files(
                     name = entry.path
                 paths.append((name, entry.stat()))
     return paths
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod()
