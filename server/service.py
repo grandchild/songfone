@@ -79,8 +79,12 @@ def _remove_f(path: str) -> None:
 
 def _expanduser_sudo(path: str) -> str:
     if path.startswith("~/"):
-        sudo_user_home = pwd.getpwnam(os.getenv("SUDO_USER")).pw_dir
-        return path.replace("~/", sudo_user_home + "/", 1)
+        sudo_user = os.getenv("SUDO_USER")
+        if sudo_user is not None:
+            sudo_user_home = pwd.getpwnam(sudo_user).pw_dir
+            return path.replace("~/", sudo_user_home + "/", 1)
+        else:
+            raise Exception("$SUDO_USER is not set")
     elif path.startswith("~"):
         first_sep = path.find("/")
         user = path[1:first_sep] if first_sep >= 0 else path[1:]
