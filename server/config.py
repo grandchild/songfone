@@ -1,7 +1,8 @@
 import json
 import os
-import sys
 import re
+import sys
+from typing import Union, Optional, List
 
 MAX_CONVERT_THREADS = 512
 
@@ -22,13 +23,15 @@ class Config:
     '.songfone/songs.db'
     """
 
-    audio = "~/Music"  # may also be List[str]
-    output = "~/.local/share/songfone"
-    extensions = ["mp3", "flac", "mp4", "ogg", "opus"]
-    wants = ".songfone/songs.wants"
-    database = ".songfone/songs.db"
-    max_conversion_threads = 2
-    _error = None
+    audio: Union[str, List[str]] = "~/Music"
+    output: str = "~/.local/share/songfone"
+    extensions: List[str] = ["mp3", "flac", "mp4", "ogg", "opus"]
+    wants: str = ".songfone/songs.wants"
+    database: str = ".songfone/songs.db"
+    ffmpeg_bin: str = "ffmpeg"  # default: ffmpeg is in $PATH
+    max_conversion_threads: int = 2
+    cover_max_dimension: int = 1024
+    _error: Optional[Exception] = None
 
     def load(self, file: str) -> None:
         self._load_from_file(file)

@@ -20,10 +20,7 @@ try.
 * [mutagen](https://github.com/quodlibet/mutagen)
 
 Optional for codec conversion:
-* [pydub](https://github.com/jiaaro/pydub)
-* pydub backend: [ffmpeg](https://ffmpeg.org) or [libav](https://libav.org)
-    (see [install instructions for pydub](
-        https://github.com/jiaaro/pydub#getting-ffmpeg-set-up))
+* ffmpeg: [ffmpeg](https://ffmpeg.org)
 
 ### Phone requirements
 

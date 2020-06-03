@@ -19,7 +19,7 @@ class Want:
         self.path = path
         if self.conversion is not None:
             self.src_path = self.path
-            self.path = os.path.splitext(self.path)[0] + self.conversion.get_ext()
+            self.path = os.path.splitext(self.path)[0] + "." + self.conversion.ext
         self.have = False
 
     def __hash__(self):
