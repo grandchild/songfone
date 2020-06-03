@@ -1,3 +1,4 @@
+import os
 import sys
 
 from config import config, Config
@@ -8,11 +9,14 @@ from wants import fulfill_wants
 def main(config_file=None):
     config.load(config_file or "songfone.conf")
     config.make_output()
+    wants_changed_time = os.path.getmtime(config.wants_file)
     fulfill_wants()
     print(":: wanted files complete")
     update_database()
     print(":: database update complete")
-    fulfill_wants()
+    while wants_changed_time < os.path.getmtime(config.wants_file):
+        wants_changed_time = os.path.getmtime(config.wants_file)
+        fulfill_wants()
 
 
 if __name__ == "__main__":
