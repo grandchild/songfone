@@ -1,10 +1,9 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import os
-import sys
 import shutil
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
-from typing import Iterable, Union, Tuple, List, Set
+import sys
+from typing import Iterable, Union, Tuple, List, Set, Optional
 
 from config import config
 from dirs import list_files_relative
@@ -25,7 +24,7 @@ class Want:
     def __hash__(self):
         return hash(self.path)
 
-    def __eq__(self, other: Union["Want", str, os.PathLike]) -> bool:
+    def __eq__(self, other: object) -> bool:
         """
         >>> w = Want("", "p")
         >>> w == "p"
@@ -124,7 +123,7 @@ def get_wants() -> List[Want]:
     return wants
 
 
-def get_want_diffs(wants: Iterable[Want]) -> Tuple[Set[str], Set[Want]]:
+def get_want_diffs(wants: Iterable[Want]) -> Tuple[List[str], List[Want]]:
     have_paths = {
         f[0]
         for f in list_files_relative(
@@ -160,10 +159,11 @@ def add_wanted(added: Iterable[Want]) -> None:
         target = os.path.join(config.output, f.path)
         shutil.copy2(os.path.join(f.audio_dir, f.path), target)
 
-    conversions = [a for a in added if a.conversion is not None]
     with ThreadPoolExecutor(config.max_conversion_threads) as pool:
         conversion_path = {
-            pool.submit(fc.conversion.do, fc): fc.path for fc in conversions
+            pool.submit(fc.conversion.do, fc): fc.path
+            for fc in added
+            if fc.conversion is not None
         }
         for future in as_completed(conversion_path):
             if not future.result():
@@ -180,11 +180,12 @@ def fulfill_wants() -> None:
     add_wanted([a for a in added if a.conversion is not None])
 
 
-def _split_json_want(json_want: str) -> Tuple[str, str]:
+def _split_json_want(json_want: str) -> Tuple[Optional[str], str]:
     want_dir_hash, want_path = json_want.split(":", 1)
     for audio_dir in config.audio:
         if path_hash(audio_dir) == want_dir_hash:
             return audio_dir, want_path
+    return None, ""
 
 
 if __name__ == "__main__":
