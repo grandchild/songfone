@@ -91,10 +91,11 @@ This config key supports setting the thread count in relation to the system's CP
     "max_conversion_threads": "cpus/2"
 }
 ```
-You may use any expression like `cpus [ +|-|*|/ <number> ]`, e.g.: *"cpus-2"*,
+You may use any expression like `"cpus" [["+"|"-"|"*"|"/"] <number>]`, e.g.: *"cpus-2"*,
 *"CPUs \* 2"* or just *"cpus"*. Case and spaces between the operands and operators don't
-matter. Conversion might fail if all CPUs are busy with ffmpeg (*TODO: Why?*), so a
-recommended setting would be *"cpus-1"*.
+matter. Conversion can occupy a CPU pretty well, so some recommended alternate settings
+would be *"cpus-1"* or the more conservative *"cpus/2"*, so that your system still has
+some wiggle room.
 
 Other options can be found in [`config.py`](server/config.py) as attributes of
 the `Config` class.
