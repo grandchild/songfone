@@ -20,7 +20,7 @@ try.
 * [mutagen](https://github.com/quodlibet/mutagen)
 
 Optional for codec conversion:
-* ffmpeg: [ffmpeg](https://ffmpeg.org)
+* [ffmpeg](https://ffmpeg.org)
 
 ### Phone requirements
 
