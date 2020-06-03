@@ -2,12 +2,12 @@ import os
 import sys
 from glob import glob
 import sqlite3
-import mutagen
-from mutagen.mp3 import MP3
-from mutagen.easyid3 import EasyID3
+import mutagen  # type: ignore
+from mutagen.mp3 import MP3  # type: ignore
+from mutagen.easyid3 import EasyID3  # type: ignore
 from hashlib import sha256
 from typing import List, Dict
-from typing import Iterable, Mapping, Any, Optional
+from typing import Iterable, MutableMapping, Any, Optional
 
 from config import config
 from dirs import list_files_relative
@@ -151,17 +151,17 @@ def path_hash(path: str) -> str:
 def _upsert(
     cursor: sqlite3.Cursor,
     table: str,
-    values: Mapping[str, Any],
-    extra: Mapping[str, Any] = {},
+    values: MutableMapping[str, Any],
+    extra: Optional[MutableMapping[str, Any]] = None,
 ) -> int:
     """
-    SQlite's INSERT OR REPLACE method creates a new rowid, even if the row
-    existed before. To keep the rowid, one has to do the whole song-and-dance
-    with select-then-update-or-insert, which is what this function does.
+    SQlite's INSERT OR REPLACE method creates a new rowid, even if the row existed
+    before. To keep the rowid, one has to do the whole song-and-dance with select-then-
+    update-or-insert, which is what this function does.
 
-    Any values in the *values* dict will be matched in the SELECT query. Any
-    other values, that (in the case of a new row) need to be filled, should be
-    passed in the *extra* dict.
+    Any values in the *values* dict will be matched in the SELECT query. Any other
+    values, that (in the case of a new row) need to be filled, should be passed in the
+    *extra* dict.
 
     >>> db = sqlite3.connect(":memory:")
     >>> cursor = db.cursor()
@@ -178,6 +178,8 @@ def _upsert(
     >>> cursor.execute("SELECT descr FROM fs WHERE path = '/etc'").fetchone()[0]
     'config'
     """
+    if extra is None:
+        extra = {}
     select = f"SELECT ROWID FROM {table} WHERE " + " AND ".join(
         [f"`{k}`=:{k}" for k in values]
     )
@@ -205,7 +207,7 @@ def _upsert(
         return cursor.execute(insert, values).lastrowid
 
 
-def mimes_to_codec(mimes: Iterable[str]) -> str:
+def mimes_to_codec(mimes: List[str]) -> str:
     """Utility function for turning mutagen's mime types into a single codec string."""
     if any(["codecs=opus" in m for m in mimes]):
         return "opus"
