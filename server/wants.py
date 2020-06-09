@@ -11,6 +11,10 @@ from conversion import Conversion
 from database import path_hash
 
 
+class WantsFileParseError(ValueError):
+    pass
+
+
 class Want:
     def __init__(self, audio_dir: str, path: str, conversion: Conversion = None):
         self.conversion = conversion
@@ -101,8 +105,7 @@ def get_wants() -> List[Want]:
     except FileNotFoundError:
         return []
     except json.JSONDecodeError as err:
-        print(f"Warning, error parsing wants file: {err}", file=sys.stderr)
-        return []
+        raise WantsFileParseError(err)
     wants = []
     wants_data_wants = wants_data["wants"] if "wants" in wants_data else []
     wants_data_wants_as = wants_data["wants_as"] if "wants_as" in wants_data else []
@@ -174,7 +177,12 @@ def add_wanted(added: Iterable[Want]) -> None:
 
 
 def fulfill_wants() -> None:
-    removed, added = get_want_diffs(get_wants())
+    try:
+        wants = get_wants()
+    except WantsFileParseError as err:
+        print(f"Error parsing wants file: {err}", file=sys.stderr)
+        return
+    removed, added = get_want_diffs(wants)
     remove_unwanted(removed)
     add_wanted([a for a in added if a.conversion is None])
     add_wanted([a for a in added if a.conversion is not None])
