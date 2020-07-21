@@ -89,7 +89,7 @@ def scan_song(
     prev_song_id: int = None,
 ) -> bool:
     try:
-        if path.endswith("mp3"):
+        if path.lower().endswith("mp3"):
             data = MP3(abspath, ID3=EasyID3)
         else:
             data = mutagen.File(abspath)
