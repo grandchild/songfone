@@ -1,11 +1,15 @@
+from collections import OrderedDict
 from io import BytesIO
 import os
+from PIL import Image  # type: ignore
 import re
-from dataclasses import dataclass
-from PIL import Image
-from typing import Union, Optional, Iterable, List
+from typing import Optional, Iterable, List
 
 from config import config
+
+
+class CoverNotFoundError(FileNotFoundError):
+    pass
 
 
 class CoverArt:
@@ -23,44 +27,71 @@ class CoverArt:
     standard_names: List[str] = ["cover", "folder"]
     extensions: List[str] = ["png", "jpeg", "jpg", "bmp", "gif"]
 
-    def __init__(self, audio_path: str, hints: Optional[Iterable[str]] = None):
-        self.audio_path = audio_path
-        self.hints = hints or []
-        self.hints = [h.lower() for h in self.hints]
-        self.image_path = None
+    _cache = OrderedDict()
+    _cache_capacity = config.cover_scan_cache_size
 
-    def get(self) -> Union[str, None]:
+    def __new__(
+        cls, audio_dir: str, audio_relpath: str, hints: Optional[Iterable[str]] = None
+    ):
+        """A caching constructor for cover images for audio files.
+        Searches for matching image files around the given audio file and selects one or
+        none. Transparently returns a previous instance if the image path was already
+        seen for another audio file. Images are evicted from the cache after
+        a number (set in config.cover_scan_cache_size) of other images have been loaded.
         """
+        audio_path = os.path.join(audio_dir, audio_relpath)
+        image_path = cls._search(audio_path, hints)
+        if image_path is None:
+            raise CoverNotFoundError(f"No cover art for {audio_path!r}")
+        if image_path not in cls._cache:
+            cls._cache[image_path] = super().__new__(cls)
+            cls._cache[image_path].image_path = image_path
+        else:
+            cls._cache.move_to_end(image_path)
+        if len(cls._cache) > config.cover_scan_cache_size:
+            oldest = next(iter(cls._cache))
+            print(f"evicting {oldest}")
+            del cls._cache[oldest]
+        return cls._cache[image_path]
+
+    def __init__(self, *args):
+        self.image_mtime: Optional[int] = None
+        self.image_data: Optional[BytesIO] = None
+
+    @classmethod
+    def _search(cls, audio_path: str, hints: Optional[Iterable[str]]) -> Optional[str]:
+        """Search for coverart files and return the best candidate.
+        Searches dir containing the file and, if no images were found among sibling
+        files, the parent directory too.
         """
-        # search dir containing the file...
-        file_dir = os.path.dirname(self.audio_path)
-        # ...and optionally search parent dir
+        file_dir = os.path.dirname(audio_path)
         parent_dir = os.path.dirname(file_dir)
         candidates = []
         for path in [file_dir, parent_dir]:
             for file in os.listdir(path):
                 filepath = os.path.join(path, file)
-                rating = self._rate_as_cover_file(file, path)
+                rating = cls._rate_as_cover_file(file, path, hints)
                 if rating > 0:
-                    print(rating)
                     candidates.append((rating, filepath))
             if candidates:
-                break  # stop searching after first dir level that contains images
+                break
         if candidates:
             candidates.sort(key=lambda c: c[0])
             return candidates[-1][1]
         return None
 
-    def _rate_as_cover_file(self, filename, path) -> float:
+    @classmethod
+    def _rate_as_cover_file(
+        cls, filename: str, path: str, hints: Optional[Iterable[str]]
+    ) -> float:
         filename_lower = filename.lower()
         rating = 0.0
-        if not any([filename_lower.endswith(ext) for ext in self.extensions]):
+        if not any([filename_lower.endswith(ext) for ext in cls.extensions]):
             return rating
-        print(f"rating {path}/{filename}...")
         rating = 1.0
-        if any([n in filename_lower for n in self.standard_names]):
+        if any([n in filename_lower for n in cls.standard_names]):
             rating += 0.3
-        for hint in self.hints:
+        for hint in hints:
             if hint in filename_lower:
                 rating += 0.3
         # TODO(jakob): Check & rate images by dimensions. Images >= than
@@ -71,22 +102,28 @@ class CoverArt:
             rating *= 0.5
         return rating
 
-    def get_png_data(self) -> Union[BytesIO, None]:
+    def get_png_data(self) -> Optional[BytesIO]:
+        if self.image_data is not None:
+            return self.image_data
         if self.image_path is None:
             return None
-        img = Image.open(self.image_path)
-        if any([s > config.cover_max_dimension for s in img.size]):
-            scale = config.cover_max_dimension / max(img.size)
-            img = img.rescale((img.size[0] * scale, img.size[1] * scale), Image.LANCZOS)
-        buf = BytesIO()
-        img.save(buf, "PNG")
-        return buf
+        image = Image.open(self.image_path)
+        if any([s > config.cover_max_dimension for s in image.size]):
+            scale = config.cover_max_dimension / max(image.size)
+            image = image.rescale(
+                (int(image.size[0] * scale), int(image.size[1] * scale)), Image.LANCZOS
+            )
+        self.image_data = BytesIO()
+        image.save(self.image_data, "PNG")
+        return self.image_data
 
-    def __hash__(self) -> str:
+    def __hash__(self) -> int:
         return hash(self.image_path)
 
     def __eq__(self, other) -> bool:
         try:
+            if self.image_path is None or other.image_path is None:
+                return False
             return self.image_path == other.image_path
         except AttributeError:
             return False
