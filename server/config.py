@@ -4,7 +4,7 @@ import re
 import sys
 from typing import Union, Optional, List
 
-MAX_CONVERT_THREADS = 512
+MAX_CONVERT_THREADS = 512  # Just an upper bound for max_conversion_threads sanity.
 
 
 class Config:
@@ -12,13 +12,37 @@ class Config:
     Loads a given config file for songfone.
     
     Expected settings are:
-    * audio -- A directory containing audio files.
+    * audio         One or more directories containing audio files.
     
-    Optional settings are
-    * output -- A synced directory containing the songs to be uploaded, as well as the 
-                database and control file.
-    
-    >>> c = Config("songfone.conf")
+    Optional settings are:
+    * output        A synced directory containing the songs to be uploaded, as well as
+                    the database and control file.
+    * extensions    List of audio file extensions to expect. Defaults to
+                    ["mp3", "flac", "mp4", "ogg", "opus"]
+    * wants         The name of the JSON wants file. Defaults to
+                    ".songfone/songs.wants".
+    * database      The name of the SQLite database file. Defaults to
+                    ".songfone/songs.db".
+    * ffmpeg_bin    The ffmpeg binary to use for conversion. Defaults to "ffmpeg".
+    * max_conversion_threads
+                    A number or expression that sets the maximum number of threads to
+                    use for converting audio files.
+    * scan_for_covers
+                    Whether to look for image files with cover art for each audio file.
+    * cover_max_dimension
+                    The largest dimension in pixels for cover images. Images larger than
+                    this will be downscaled to match.
+    * cover_scan_cache_size
+                    The number of cover art image data to keep in the cache for
+                    subsequent audio files (so songs in an album don't all fetch the
+                    image each time).
+                    Can be used to tune scan RAM usage for cover art data. Lower values
+                    mean less cached images, but if the same cover file matches again
+                    later on, the image will be loaded (and possibly resized) twice or
+                    more. Assuming a somewhat sane directory structure, it's safe to
+                    keep this fairly low. Defaults to 5. Should be insignificant.
+
+    >>> c = Config()
     >>> c.database
     '.songfone/songs.db'
     """
@@ -30,7 +54,9 @@ class Config:
     database: str = ".songfone/songs.db"
     ffmpeg_bin: str = "ffmpeg"  # default: ffmpeg is in $PATH
     max_conversion_threads: int = 2
+    scan_for_covers: bool = True
     cover_max_dimension: int = 1024
+    cover_scan_cache_size: int = 5
     _error: Optional[Exception] = None
 
     def load(self, file: str) -> None:
