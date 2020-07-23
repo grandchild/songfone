@@ -87,11 +87,21 @@ class Config:
                 elif op == "*":
                     self.max_conversion_threads = min(MAX_CONVERT_THREADS, cpus * val)
                 elif op == "/":
-                    self.max_conversion_threads = min(MAX_CONVERT_THREADS, cpus // val)
+                    try:
+                        self.max_conversion_threads = min(
+                            MAX_CONVERT_THREADS, cpus // val
+                        )
+                    except ZeroDivisionError:
+                        print(
+                            f"Error, division by zero: {cpus} / {val}"
+                            " - Conversions will run in a single thread.",
+                            file=sys.stderr,
+                        )
+                        self.max_conversion_threads = 1
                 else:
                     print(
-                        "Error, you somehow exploited re.fullmatch and made it here, "
-                        "congratulations. Have a cookie.",
+                        "Error, you somehow exploited re.fullmatch and made it here."
+                        " Congratulations. Have a cookie.",
                         file=sys.stderr,
                     )
                     sys.exit(-1337)
