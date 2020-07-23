@@ -118,9 +118,11 @@ class Config:
         else:
             print(
                 "Error, max_conversion_threads is invalid: "
-                f"{self.max_conversion_threads!r}",
+                f"{self.max_conversion_threads!r}"
+                " - Conversions will run in a single thread.",
                 file=sys.stderr,
             )
+            self.max_conversion_threads = 1
 
     def __getattribute__(self, key: str):
         err = super().__getattribute__("_error")
