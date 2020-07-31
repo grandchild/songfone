@@ -70,7 +70,6 @@ class Config:
             with open(file) as config_file:
                 config = json.load(config_file)
         except (json.JSONDecodeError, FileNotFoundError, PermissionError) as err:
-            print(f"Error, config file not loaded: {err}", file=sys.stderr)
             self._error = err
             raise err
         for key, value in config.items():
@@ -156,17 +155,21 @@ class Config:
             raise RuntimeError(f"Config file could not be parsed: {err}")
         return super().__getattribute__(key)
 
-    def make_output(self) -> bool:
+    def make_output(self):
         """Create the output dir, and return True on success, False otherwise."""
         try:
-            os.makedirs(self.output, exist_ok=True)
+            try:
+                os.mkdir(self.output)
+            except FileExistsError:
+                pass
             os.makedirs(os.path.dirname(self.wants_file), exist_ok=True)
             os.makedirs(os.path.dirname(self.database_file), exist_ok=True)
+            if not os.path.exists(self.wants_file):
+                with open(self.wants_file, "a") as new_wants:
+                    print("{}", file=new_wants)
         except Exception as err:
-            print(f"Error, cannot create output directory: {err}", file=sys.stderr)
             self._error = err
-            return False
-        return True
+            raise err
 
 
 config = Config()
