@@ -10,6 +10,7 @@ from typing import List, Dict
 from typing import Iterable, MutableMapping, Any, Optional
 
 from config import config
+from coverart import CoverArt, CoverNotFoundError
 from dirs import list_files_relative
 
 
@@ -25,7 +26,8 @@ DB_LAYOUT = """
         quality,
         length_sec,
         filesize,
-        mtime
+        mtime,
+        cover
     );
 
     CREATE VIRTUAL TABLE IF NOT EXISTS tag USING fts4 (
@@ -33,10 +35,18 @@ DB_LAYOUT = """
         field NOT NULL,
         value
     );
+
+    CREATE TABLE IF NOT EXISTS cover (
+        audio_dir NOT NULL,
+        file_path NOT NULL,
+        data,
+        UNIQUE(audio_dir, file_path) ON CONFLICT IGNORE
+    );
 """
 
 DB_COMMANDS = {
     "new tag": "INSERT INTO tag VALUES (?, ?, ?)",
+    "new cover": "INSERT INTO cover VALUES (?, ?, ?)",
     "get audio dir id": "SELECT ROWID FROM audio_dir WHERE path_hash = ?",
     "get song": "SELECT ROWID, * FROM song WHERE audio_dir = ? AND `path` = ?",
     "get song tags": "SELECT field, value FROM tag WHERE song in (SELECT rowid FROM song WHERE `path` = ?)",
@@ -71,7 +81,9 @@ def scan_audio_dir(audio_dir: str, db: sqlite3.Connection) -> None:
             print(f"scanning {prefix!r}")
 
         prev_song_id = db_song["ROWID"] if db_song is not None else None
-        success = scan_song(cursor, audio_dir_id, path, stat, abspath, prev_song_id)
+        success = scan_song(
+            cursor, audio_dir, audio_dir_id, path, stat, abspath, prev_song_id
+        )
         if success:
             commit_cache_count += 1
             if commit_cache_count >= commit_every:
@@ -82,6 +94,7 @@ def scan_audio_dir(audio_dir: str, db: sqlite3.Connection) -> None:
 
 def scan_song(
     cursor: sqlite3.Cursor,
+    audio_dir: str,
     audio_dir_id: int,
     path: str,
     stat: os.stat_result,
@@ -97,6 +110,18 @@ def scan_song(
         print(f"Warning, could not scan metadata: {abspath!r}", file=sys.stderr)
         return False
     if data is not None:
+        song_tags: MutableMapping[str, str] = {}
+        cover_hints: List[str] = []
+        for tag, values in data.items():
+            # TODO(jakob): What should be done with multiple values for a tag?
+            # Separated with comma? Slash? For now, only use the first value.
+            clean_first_value = "".join([c for c in values[0] if ord(c) >= 0x20])
+            if tag in ["path", "codec", "filesize", "mtime"]:
+                continue
+            if tag in ["artist", "album", "album_artist", "albumartist"]:
+                cover_hints += values
+            song_tags[tag] = clean_first_value
+        cover_id = scan_song_coverart(cursor, audio_dir, path, cover_hints)
         codec = mimes_to_codec(data.mime)
         quality = data.info.bitrate if hasattr(data.info, "bitrate") else 0
         length = data.info.length
@@ -110,17 +135,37 @@ def scan_song(
                 "length_sec": length,
                 "filesize": stat.st_size,
                 "mtime": int(stat.st_mtime),
+                "cover": cover_id,
             },
         )
         if prev_song_id is not None:
             cursor.execute(DB_COMMANDS["clear song tags"], (prev_song_id,))
-        for tag, value in data.items():
-            clean_value = "".join([c for c in value[0] if ord(c) >= 0x20])
-            if tag in ["path", "codec", "filesize", "mtime"]:
-                continue
-            cursor.execute(DB_COMMANDS["new tag"], (song_id, tag, clean_value))
+        for tag, value in song_tags.items():
+            cursor.execute(DB_COMMANDS["new tag"], (song_id, tag, value))
         return True
     return False
+
+
+def scan_song_coverart(
+    cursor: sqlite3.Cursor, audio_dir: str, path: str, cover_hints: Iterable[str]
+):
+    # Maybe cover image data should not actually be in DB but rather in actual
+    # files?
+    try:
+        cover = CoverArt(audio_dir, path, cover_hints)
+        image_data = cover.get_data()
+        cover_id = _upsert(
+            cursor,
+            "cover",
+            {"audio_dir": audio_dir, "file_path": cover.image_path},
+            {"data": image_data},
+        )
+        # cursor.execute(
+        #     DB_COMMANDS["new cover"], (audio_dir, cover.image_path, image_data),
+        # )
+        return cover_id
+    except CoverNotFoundError:
+        pass
 
 
 def update_database() -> None:
