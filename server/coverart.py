@@ -3,6 +3,7 @@ from io import BytesIO
 import os
 from PIL import Image  # type: ignore
 import re
+import sys
 from typing import Optional, Iterable, List
 
 from config import config
@@ -20,7 +21,7 @@ class CoverArt:
     ... )
     >>> cover.get()
     "/path/to/artist/album/cover.jpg"
-    >>> cover.get_png_data()
+    >>> cover.get_data()
     b'\x01\x02...'
     """
 
@@ -40,9 +41,14 @@ class CoverArt:
         a number (set in config.cover_scan_cache_size) of other images have been loaded.
         """
         audio_path = os.path.join(audio_dir, audio_relpath)
-        image_path = cls._search(audio_path, hints)
-        if image_path is None:
+        if hints:
+            hints = [hint.lower() for hint in hints]
+        else:
+            hints = []
+        image_abspath = cls._search(audio_path, hints)
+        if image_abspath is None:
             raise CoverNotFoundError(f"No cover art for {audio_path!r}")
+        image_path = os.path.relpath(image_abspath, audio_dir)
         if image_path not in cls._cache:
             cls._cache[image_path] = super().__new__(cls)
             cls._cache[image_path].image_path = image_path
@@ -53,12 +59,14 @@ class CoverArt:
             del cls._cache[oldest]
         return cls._cache[image_path]
 
-    def __init__(self, *args):
+    def __init__(self, audio_dir: str, *args):
+        self.audio_dir = audio_dir
         self.image_mtime: Optional[int] = None
         self.image_data: Optional[BytesIO] = None
+        self.image_path: str  # set in __new__, declared here for typing
 
     @classmethod
-    def _search(cls, audio_path: str, hints: Optional[Iterable[str]]) -> Optional[str]:
+    def _search(cls, audio_path: str, hints: Iterable[str]) -> Optional[str]:
         """Search for coverart files and return the best candidate.
         Searches dir containing the file and, if no images were found among sibling
         files, the parent directory too.
@@ -66,55 +74,73 @@ class CoverArt:
         file_dir = os.path.dirname(audio_path)
         parent_dir = os.path.dirname(file_dir)
         candidates = []
+        max_filesize: Optional[int] = None
         for path in [file_dir, parent_dir]:
             for file in os.listdir(path):
+                filename_lower = file.lower()
+                if not any([filename_lower.endswith(ext) for ext in cls.extensions]):
+                    continue
                 filepath = os.path.join(path, file)
-                rating = cls._rate_as_cover_file(file, path, hints)
-                if rating > 0:
-                    candidates.append((rating, filepath))
+                filesize = os.stat(filepath).st_size
+                candidates.append((filepath, filename_lower, filesize))
+                if max_filesize is None or filesize > max_filesize:
+                    max_filesize = filesize
             if candidates:
                 break
-        if candidates:
-            candidates.sort(key=lambda c: c[0])
-            return candidates[-1][1]
+        if candidates and max_filesize:
+            rating = lambda c: cls._rate_as_cover_file(c[1], hints, c[2], max_filesize)
+            candidates.sort(key=rating, reverse=True)
+            return candidates[0][0]
         return None
 
     @classmethod
     def _rate_as_cover_file(
-        cls, filename: str, path: str, hints: Optional[Iterable[str]]
+        cls, filename_lower: str, hints: Iterable[str], filesize: int, max_filesize: int
     ) -> float:
-        filename_lower = filename.lower()
         rating = 0.0
-        if not any([filename_lower.endswith(ext) for ext in cls.extensions]):
-            return rating
-        rating = 1.0
         if any([n in filename_lower for n in cls.standard_names]):
-            rating += 0.3
+            rating += 0.6
         for hint in hints:
             if hint in filename_lower:
                 rating += 0.3
-        # TODO(jakob): Check & rate images by dimensions. Images >= than
-        # config.cover_max_dimension should get a higher rating while smaller images
-        # should get a penalty (but retain > 0, since they already matched).
-        img = Image.open(os.path.join(path, filename))
-        if any([s < config.cover_max_dimension for s in img.size]):
-            rating *= 0.5
+        rating += (filesize / max_filesize) * 0.5
+        ### Checking for image size is quite expensive. Turn it off, and rely on
+        ### filesize as a rough gauge for image quality.
+        # img = Image.open(os.path.join(path, filename))
+        # if any([s < config.cover_max_dimension for s in img.size]):
+        #     rating *= 0.5
         return rating
 
-    def get_png_data(self) -> Optional[BytesIO]:
+    def get_data(self, image_format="JPEG") -> Optional[bytes]:
+        """Load (and possibly resize to fit cover_max_dimension) the cover image.
+        Returns the bytes of the image file in the given *image_format*, or None on
+        error.
+        """
         if self.image_data is not None:
-            return self.image_data
-        if self.image_path is None:
-            return None
-        image = Image.open(self.image_path)
-        if any([s > config.cover_max_dimension for s in image.size]):
-            scale = config.cover_max_dimension / max(image.size)
-            image = image.rescale(
-                (int(image.size[0] * scale), int(image.size[1] * scale)), Image.LANCZOS
-            )
+            return self.image_data.getvalue()
         self.image_data = BytesIO()
-        image.save(self.image_data, "PNG")
-        return self.image_data
+        try:
+            image = Image.open(os.path.join(self.audio_dir, self.image_path))
+            if any([s > config.cover_max_dimension for s in image.size]):
+                scale = config.cover_max_dimension / max(image.size)
+                image = image.resize(
+                    (int(image.size[0] * scale), int(image.size[1] * scale)),
+                    Image.LANCZOS,
+                )
+            image.save(self.image_data, image_format)
+        except OSError as err:
+            if "cannot write mode" in str(err):
+                image.convert("RGB").save(self.image_data, image_format)
+            else:
+                # e.g. "image file is truncated", or other image loading/saving errors
+                print(
+                    f"Warning, image data load/save failed for {self.image_path}:",
+                    err,
+                    file=sys.stderr,
+                )
+                return None
+
+        return self.image_data.getvalue()
 
     def __hash__(self) -> int:
         return hash(self.image_path)
