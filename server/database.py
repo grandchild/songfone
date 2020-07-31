@@ -75,7 +75,8 @@ def scan_audio_dir(audio_dir: str, db: sqlite3.Connection) -> None:
         ):
             continue
         abspath = os.path.join(audio_dir, path)
-        prefix = path[: path.find("/")]
+        first_sep = path.find("/")
+        prefix = path[:first_sep] if first_sep >= 0 else path
         if last_prefix != prefix:
             last_prefix = prefix
             print(f"scanning {prefix!r}")
