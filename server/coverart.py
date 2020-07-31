@@ -27,7 +27,7 @@ class CoverArt:
     standard_names: List[str] = ["cover", "folder"]
     extensions: List[str] = ["png", "jpeg", "jpg", "bmp", "gif"]
 
-    _cache = OrderedDict()
+    _cache: OrderedDict = OrderedDict()
     _cache_capacity = config.cover_scan_cache_size
 
     def __new__(
