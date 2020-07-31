@@ -50,7 +50,6 @@ class CoverArt:
             cls._cache.move_to_end(image_path)
         if len(cls._cache) > config.cover_scan_cache_size:
             oldest = next(iter(cls._cache))
-            print(f"evicting {oldest}")
             del cls._cache[oldest]
         return cls._cache[image_path]
 
