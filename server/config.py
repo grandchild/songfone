@@ -55,7 +55,7 @@ class Config:
     ffmpeg_bin: str = "ffmpeg"  # default: ffmpeg is in $PATH
     max_conversion_threads: int = 2
     scan_for_covers: bool = True
-    cover_max_dimension: int = 1024
+    cover_max_dimension: int = 512
     cover_scan_cache_size: int = 5
     _error: Optional[Exception] = None
 
