@@ -49,8 +49,14 @@ DB_COMMANDS = {
     "new cover": "INSERT INTO cover VALUES (?, ?, ?)",
     "get audio dir id": "SELECT ROWID FROM audio_dir WHERE path_hash = ?",
     "get song": "SELECT ROWID, * FROM song WHERE audio_dir = ? AND `path` = ?",
-    "get song tags": "SELECT field, value FROM tag WHERE song in (SELECT rowid FROM song WHERE `path` = ?)",
-    "clear db": "DROP TABLE IF EXISTS audio_dir; DROP TABLE IF EXISTS song; DROP TABLE IF EXISTS tag",
+    "get song tags": """SELECT field, value FROM tag
+        WHERE song in (SELECT rowid FROM song WHERE `path` = ?)""",
+    "clear db": """
+        DROP TABLE IF EXISTS audio_dir;
+        DROP TABLE IF EXISTS song;
+        DROP TABLE IF EXISTS tag;
+        DROP TABLE IF EXISTS cover;
+    """,
     "clear song tags": "DELETE FROM tag WHERE song = ?",
 }
 
